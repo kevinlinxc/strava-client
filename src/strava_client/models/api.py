@@ -15,6 +15,15 @@ class MetaAthlete(StravaBaseModel):
 
     id: int
 
+class PolylineMap(StravaBaseModel):
+    """
+    Strava map model, containing the polyline of the activity.
+    """
+
+    id: str
+    summary_polyline: str | None = None
+    polyline: str | None = None
+
 
 class StravaActivity(StravaBaseModel):
     """
@@ -41,6 +50,7 @@ class StravaActivity(StravaBaseModel):
     max_speed: float
     start_latlng: list[float]
     end_latlng: list[float]
+    map: PolylineMap
 
 
 class StravaBaseStream(StravaBaseModel):

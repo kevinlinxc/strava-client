@@ -17,3 +17,4 @@ class StravaSportType(BaseEnum):
     TABLE_TENNIS = "TableTennis"
     WORKOUT = "Workout"
     WEIGHT_TRAINING = "WeightTraining"
+    HIKE="Hike"

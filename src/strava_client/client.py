@@ -115,6 +115,40 @@ class StravaClient:
         list_act_adapter = TypeAdapter(list[StravaActivity])
         return list_act_adapter.validate_python(response.json())
 
+    def get_activity_detailed(self, id: str) -> StravaActivity:
+        """
+        Get the detailed information about an activity by its ID.
+        See the Strava API documentation for more details:
+        https://developers.strava.com/docs/reference/#api-Activities-getActivityById
+
+        Args:
+            id (str):
+                The ID of the activity.
+        Returns:
+            StravaActivity:
+                The detailed information about the activity.
+        """
+        self._verify_token()
+
+        url = f"{self.BASE_SERVER_URL}/activities/{id}"
+
+        # # Set the headers
+
+        headers = {"Authorization": f"Bearer {self.settings.access_token}"}
+        # Make the GET request
+        response = requests.get(
+            url,
+            headers=headers,
+        )
+        if response.status_code != 200:
+            raise ValueError(
+                f"Failed to retrieve activity details. Status code: {response.status_code}."
+                f" Response: {response.text}"
+            )
+        act_adapter = TypeAdapter(StravaActivity)
+        return act_adapter.validate_python(response.json())
+
+
     def get_activity_stream(
         self,
         id: str,
