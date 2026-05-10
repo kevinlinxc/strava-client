@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 
 from strava_client.client import StravaClient
+from strava_client.models.api import StravaActivity
 from strava_client.models.settings import StravaSettings
 from strava_client.constants import DEFAULT_SCOPES
 from strava_client.enums.auth import StravaScope
@@ -80,6 +81,36 @@ def mock_activities():
             "type": "Ride",
         },
     ]
+
+
+@pytest.fixture
+def mock_activity_detailed():
+    """Fixture to mock a detailed activity response"""
+    return {
+        "id": 1234567890,
+        "external_id": "ext_123",
+        "name": "Morning Run",
+        "athlete": {"id": 42},
+        "distance": 5000.5,
+        "moving_time": 1800,
+        "elapsed_time": 1900,
+        "total_elevation_gain": 50.0,
+        "elev_high": 100.0,
+        "elev_low": 10.0,
+        "sport_type": "Run",
+        "start_date": "2023-01-01T10:00:00Z",
+        "start_date_local": "2023-01-01T10:00:00Z",
+        "timezone": "(GMT+00:00) UTC",
+        "average_speed": 2.77,
+        "max_speed": 4.0,
+        "start_latlng": [51.0, -0.1],
+        "end_latlng": [51.1, -0.2],
+        "map": {
+            "id": "map_123",
+            "summary_polyline": "abc123",
+            "polyline": "abcdefghijklmnop",
+        },
+    }
 
 
 class TestStravaClient:
@@ -233,3 +264,49 @@ class TestStravaClient:
         assert isinstance(response, StravaGetTokenResponse)
         assert response.access_token == "new_access_token"
         assert response.refresh_token == "new_refresh_token"
+
+    @patch("strava_client.client.requests.get")
+    @patch("strava_client.client.StravaSettings")
+    def test_get_activity_detailed_success(
+        self, mock_settings_class, mock_get, mock_settings, mock_activity_detailed
+    ):
+        """Test get_activity_detailed returns a StravaActivity on success"""
+        mock_settings_class.return_value = mock_settings
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_activity_detailed
+        mock_get.return_value = mock_response
+
+        client = StravaClient()
+        activity = client.get_activity_detailed("1234567890")
+
+        mock_get.assert_called_once()
+        call_args = mock_get.call_args
+        assert "/activities/1234567890" in call_args[0][0]
+        assert call_args[1]["headers"]["Authorization"] == "Bearer test_access_token"
+
+        assert isinstance(activity, StravaActivity)
+        assert activity.id == 1234567890
+        assert activity.name == "Morning Run"
+        assert activity.distance == 5000.5
+        assert activity.map is not None
+        assert activity.map.polyline == "abcdefghijklmnop"
+
+    @patch("strava_client.client.requests.get")
+    @patch("strava_client.client.StravaSettings")
+    def test_get_activity_detailed_not_found(
+        self, mock_settings_class, mock_get, mock_settings
+    ):
+        """Test get_activity_detailed raises ValueError on non-200 response"""
+        mock_settings_class.return_value = mock_settings
+
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.text = "Not Found"
+        mock_get.return_value = mock_response
+
+        client = StravaClient()
+
+        with pytest.raises(ValueError, match="Failed to retrieve activity details"):
+            client.get_activity_detailed("nonexistent_id")
