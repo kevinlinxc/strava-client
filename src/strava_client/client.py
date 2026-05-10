@@ -118,6 +118,7 @@ class StravaClient:
     def get_activity_detailed(self, id: str) -> StravaActivity:
         """
         Get the detailed information about an activity by its ID.
+        Strava returns more information when fetching one activity by ID than when fetching the list of activities, including the full polyline.
         See the Strava API documentation for more details:
         https://developers.strava.com/docs/reference/#api-Activities-getActivityById
 
